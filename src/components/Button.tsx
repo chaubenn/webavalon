@@ -10,13 +10,14 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition active:scale-[0.98] disabled:opacity-40";
+    "inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-display tracking-wide transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed";
+
   const styles =
     variant === "primary"
-      ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-400"
+      ? "bg-[var(--gold)] text-[#07090d] font-semibold shadow-lg shadow-[var(--gold-dim)]/30 hover:bg-[var(--gold-light)] hover:shadow-[var(--gold)]/40"
       : variant === "outline"
-        ? "border border-white/15 text-white hover:bg-white/10"
-        : "text-white/80 hover:text-white";
+        ? "border border-[rgba(201,168,76,0.45)] text-[var(--gold)] hover:bg-[rgba(201,168,76,0.1)] hover:border-[var(--gold)]"
+        : "text-[var(--parchment-dim)] hover:text-[var(--gold)]";
 
   return <button className={`${base} ${styles} ${className}`} {...props} />;
 }

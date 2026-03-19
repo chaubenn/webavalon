@@ -9,10 +9,10 @@ export function TogglePill({ active, label, onClick }: TogglePillProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+      className={`rounded-full px-4 py-1.5 text-xs font-display tracking-wide transition-all ${
         active
-          ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/30"
-          : "border border-white/10 text-white/70 hover:text-white"
+          ? "bg-[var(--gold)] text-[#07090d] shadow-md shadow-[var(--gold-dim)]/40"
+          : "border border-[rgba(201,168,76,0.3)] text-[var(--parchment-dim)] hover:border-[var(--gold)] hover:text-[var(--gold)]"
       }`}
     >
       {label}

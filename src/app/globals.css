@@ -1,24 +1,264 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b0b12;
-  --foreground: #f5f5f7;
+  --background: #07090d;
+  --foreground: #e8dcc8;
+  --gold: #c9a84c;
+  --gold-light: #e8c96d;
+  --gold-dim: #7a5c1e;
+  --stone: #0d1018;
+  --stone-mid: #141b24;
+  --stone-light: #1c2530;
+  --parchment-dim: #9a8a6a;
+  --crimson: #6b1212;
+  --crimson-light: #9b2020;
+  --crimson-bright: #c0392b;
+  --realm-green: #1a4a2e;
+  --realm-green-light: #2a7a4a;
+  --realm-green-bright: #27ae60;
+  --lady-blue: #0e1a2e;
+  --lady-blue-light: #1a3a6e;
+  --lady-blue-bright: #4a90c4;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-dim: var(--gold-dim);
+  --color-stone: var(--stone);
+  --color-stone-mid: var(--stone-mid);
+  --color-stone-light: var(--stone-light);
+  --color-parchment: var(--foreground);
+  --color-parchment-dim: var(--parchment-dim);
+  --color-crimson: var(--crimson);
+  --color-crimson-light: var(--crimson-light);
+  --color-crimson-bright: var(--crimson-bright);
+  --color-realm-green: var(--realm-green);
+  --color-realm-green-light: var(--realm-green-light);
+  --color-realm-green-bright: var(--realm-green-bright);
+  --color-lady-blue: var(--lady-blue);
+  --color-lady-blue-light: var(--lady-blue-light);
+  --color-lady-blue-bright: var(--lady-blue-bright);
+  --font-display: var(--font-cinzel);
+  --font-sans: var(--font-garamond);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-garamond), Georgia, "Times New Roman", serif;
   min-height: 100vh;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 * {
   -webkit-tap-highlight-color: transparent;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-cinzel), "Times New Roman", serif;
+  letter-spacing: 0.05em;
+}
+
+/* ── Animations ───────────────────────────────────────────── */
+
+@keyframes card-flip-in {
+  0% {
+    transform: perspective(800px) rotateY(90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: perspective(800px) rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ripple-out {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(3.5);
+    opacity: 0;
+  }
+}
+
+@keyframes gold-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes victory-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  60% {
+    transform: translateY(-6px) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes water-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* ── Animation utilities ──────────────────────────────────── */
+
+.animate-card-flip-in {
+  animation: card-flip-in 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.animate-fade-in-scale {
+  animation: fade-in-scale 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.35s ease-out forwards;
+}
+
+.animate-ripple-out {
+  animation: ripple-out 2s ease-out infinite;
+}
+
+.animate-victory-rise {
+  animation: victory-rise 0.7s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.animate-water-shimmer {
+  background-size: 300% 300%;
+  animation: water-shimmer 4s ease infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2.5s ease-in-out infinite;
+}
+
+/* ── Typography utilities ─────────────────────────────────── */
+
+.font-display {
+  font-family: var(--font-cinzel), "Times New Roman", serif;
+}
+
+.gold-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--gold-dim) 0%,
+    var(--gold) 30%,
+    var(--gold-light) 50%,
+    var(--gold) 70%,
+    var(--gold-dim) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gold-shimmer 4s linear infinite;
+}
+
+/* ── Ornamental divider ───────────────────────────────────── */
+
+.ornament-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--gold-dim);
+  font-size: 0.7rem;
+}
+
+.ornament-divider::before,
+.ornament-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--gold-dim),
+    transparent
+  );
+}
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--stone);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gold-dim);
+  border-radius: 3px;
 }

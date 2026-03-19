@@ -60,27 +60,23 @@ export default function HostLobbyPage() {
     QRCode.toDataURL(joinUrl, {
       margin: 1,
       width: 240,
-      color: { dark: "#F5F5F7", light: "#0B0B12" }
+      color: { dark: "#e8dcc8", light: "#07090d" }
     })
       .then(setQrCode)
       .catch(() => setQrCode(null));
   }, [joinUrl]);
 
   useEffect(() => {
-    if (!hostSecret) {
-      return;
-    }
+    if (!hostSecret) return;
     getHostState(code, hostSecret)
       .then(setLobbyState)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : "Unable to load lobby.")
+        setError(err instanceof Error ? err.message : "Unable to load the council.")
       );
   }, [code, hostSecret]);
 
   useEffect(() => {
-    if (!hostSecret) {
-      return;
-    }
+    if (!hostSecret) return;
     const socket = createLobbySocket(code, {
       onMessage: (message) => {
         if (message.type === "lobby_state") {
@@ -90,7 +86,7 @@ export default function HostLobbyPage() {
           router.push("/");
         }
         if (message.type === "error") {
-          setError(String(message.message ?? "Socket error."));
+          setError(String(message.message ?? "A disturbance in the realm."));
         }
       }
     });
@@ -110,7 +106,7 @@ export default function HostLobbyPage() {
       counts.set(name, (counts.get(name) ?? 0) + 1);
     }
     return Array.from(counts.entries()).map(([name, count]) =>
-      count > 1 ? `${name} x${count}` : name
+      count > 1 ? `${name} ×${count}` : name
     );
   }, [roleConfig.roles]);
 
@@ -118,10 +114,7 @@ export default function HostLobbyPage() {
     () =>
       JSON.stringify({
         lobbyName: editLobbyName.trim() || "",
-        players: editPlayers.map((player) => ({
-          id: player.id ?? "",
-          name: player.name.trim()
-        })),
+        players: editPlayers.map((p) => ({ id: p.id ?? "", name: p.name.trim() })),
         roles: roleConfig.roles,
         ladyEnabled
       }),
@@ -129,26 +122,17 @@ export default function HostLobbyPage() {
   );
 
   useEffect(() => {
-    if (!lobbyState || lobbyState.gameState !== "lobby") {
-      return;
-    }
+    if (!lobbyState || lobbyState.gameState !== "lobby") return;
     const snapshot = JSON.stringify({
       lobbyName: lobbyState.lobbyName || "",
-      players: lobbyState.players.map((player) => ({
-        id: player.id,
-        name: player.name
-      })),
+      players: lobbyState.players.map((p) => ({ id: p.id, name: p.name })),
       roles: lobbyState.roleConfig.roles,
       ladyEnabled: lobbyState.ladyEnabled
     });
-
     if (!dirty) {
       setEditLobbyName(lobbyState.lobbyName || "");
       setEditPlayers(
-        lobbyState.players.map((player) => ({
-          id: player.id,
-          name: player.name
-        }))
+        lobbyState.players.map((p) => ({ id: p.id, name: p.name }))
       );
       setRoleOptions({
         percival: lobbyState.roleConfig.roles.includes("percival"),
@@ -184,7 +168,7 @@ export default function HostLobbyPage() {
       setCopyState("copied");
       window.setTimeout(() => setCopyState("idle"), 1500);
     } catch {
-      setError("Unable to copy join link.");
+      setError("Unable to copy the seal.");
     }
   };
 
@@ -202,32 +186,33 @@ export default function HostLobbyPage() {
     try {
       await startGame(code, hostSecret);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to start game.");
+      setError(err instanceof Error ? err.message : "The quest could not begin.");
     }
   };
 
   const joinedLabel = useMemo(() => {
     if (!lobbyState) return "";
-    return `${lobbyState.joinedCount}/${lobbyState.players.length} joined`;
+    return `${lobbyState.joinedCount}/${lobbyState.players.length} knights present`;
   }, [lobbyState]);
 
   const hostPlayerName = useMemo(() => {
     if (!lobbyState || !hostSlotId) return null;
-    return lobbyState.players.find((player) => player.id === hostSlotId)?.name;
+    return lobbyState.players.find((p) => p.id === hostSlotId)?.name;
   }, [lobbyState, hostSlotId]);
 
   const game = lobbyState?.game;
 
   if (!hostSecret) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0b0b12] px-6">
+      <div className="flex min-h-screen items-center justify-center bg-[#07090d] px-6">
         <Card className="max-w-md space-y-3 text-center">
-          <h1 className="text-lg font-semibold text-white">
-            Host access not found
+          <div className="text-3xl text-[var(--gold-dim)]">⚔</div>
+          <h1 className="font-display text-lg font-semibold text-[var(--foreground)]">
+            The Seal is Absent
           </h1>
-          <p className="text-sm text-white/60">
-            Open this page on the device that created the lobby to regain host
-            controls.
+          <p className="text-sm text-[var(--parchment-dim)]">
+            Return to the device that summoned this council to reclaim your host
+            powers.
           </p>
         </Card>
       </div>
@@ -235,135 +220,138 @@ export default function HostLobbyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0b12] px-6 py-8">
+    <div className="min-h-screen bg-[#07090d] px-6 py-8">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
-        <header className="flex flex-col gap-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-indigo-300/70">
-            Host lobby
+
+        {/* Header */}
+        <header className="space-y-2">
+          <p className="font-display text-xs tracking-[0.3em] uppercase text-[var(--gold-dim)]">
+            ✦ &nbsp; The Round Table
           </p>
-          <h1 className="text-2xl font-semibold text-white">
-            {lobbyState?.lobbyName || "Avalon Lobby"}
+          <h1 className="font-display text-2xl font-semibold text-[var(--foreground)]">
+            {lobbyState?.lobbyName || "Avalon Council"}
           </h1>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-white/60">
-            <span>Code: {code}</span>
-            <span className="h-1 w-1 rounded-full bg-white/30" />
+          <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--parchment-dim)]">
+            <span className="font-display tracking-wider">Code: {code}</span>
+            <span className="h-1 w-1 rounded-full bg-[var(--gold-dim)]" />
             <span>{joinedLabel}</span>
             {allJoined && (
-              <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-xs text-emerald-200">
-                Everyone is in
+              <span className="rounded-full border border-[rgba(42,122,74,0.5)] bg-[rgba(26,74,46,0.5)] px-3 py-0.5 text-xs font-display text-[var(--realm-green-bright)]">
+                All knights present
               </span>
             )}
           </div>
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-[var(--gold-dim)] to-transparent opacity-30" />
         </header>
 
         {error && (
-          <Card className="border border-rose-400/30 bg-rose-500/10 text-sm text-rose-200">
+          <div className="rounded-xl border border-[rgba(155,32,32,0.4)] bg-[rgba(107,18,18,0.3)] px-4 py-3 text-sm text-[var(--crimson-bright)]">
             {error}
-          </Card>
+          </div>
         )}
 
+        {/* Join link */}
         <Card className="space-y-4">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-lg font-semibold text-white">Join link</h2>
-            <p className="text-sm text-white/60">
-              Share this link or let players scan the QR code.
+          <div>
+            <h2 className="font-display text-base font-semibold text-[var(--foreground)]">
+              The Seal of Entry
+            </h2>
+            <p className="mt-1 text-sm text-[var(--parchment-dim)]">
+              Share this link or let each knight scan the seal.
             </p>
           </div>
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <div className="flex-1 rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-xs text-white/70">
+            <div className="flex-1 rounded-xl border border-[rgba(201,168,76,0.15)] bg-[#07090d] px-4 py-3 text-xs text-[var(--parchment-dim)] break-all">
               {joinUrl}
             </div>
-            <Button type="button" variant="outline" onClick={handleCopy}>
-              {copyState === "copied" ? "Copied" : "Copy link"}
+            <Button variant="outline" onClick={handleCopy}>
+              {copyState === "copied" ? "✦ Copied" : "Copy seal"}
             </Button>
             <Button
-              type="button"
               variant="ghost"
               onClick={() => {
                 if (navigator.share) {
-                  navigator.share({ title: "Avalon Lobby", url: joinUrl });
+                  navigator.share({ title: "Avalon Council", url: joinUrl });
                 }
               }}
             >
               Share
             </Button>
           </div>
-          <div className="flex justify-center rounded-2xl border border-white/10 bg-black/30 px-4 py-6">
+          <div className="flex justify-center rounded-xl border border-[rgba(201,168,76,0.15)] bg-[#07090d] px-4 py-6">
             {qrCode ? (
               <img
                 src={qrCode}
-                alt="Lobby join QR code"
-                className="h-48 w-48 rounded-2xl border border-white/10"
+                alt="Council entry QR seal"
+                className="h-48 w-48 rounded-xl"
               />
             ) : (
-              <span className="text-xs text-white/50">Generating QR...</span>
+              <span className="text-xs text-[var(--parchment-dim)]/50">
+                Inscribing seal…
+              </span>
             )}
           </div>
         </Card>
 
+        {/* Host as player */}
         {hostPlayerName && (
           <Card className="flex flex-col gap-3">
-            <h2 className="text-lg font-semibold text-white">
-              You are joined as {hostPlayerName}
+            <h2 className="font-display text-base font-semibold text-[var(--foreground)]">
+              You ride as{" "}
+              <span className="text-[var(--gold)]">{hostPlayerName}</span>
             </h2>
-            <p className="text-sm text-white/60">
-              Open the player view to reveal your role once the game starts.
+            <p className="text-sm text-[var(--parchment-dim)]">
+              Open your knight&apos;s view to reveal your role once the quest begins.
             </p>
             <Button
-              type="button"
               variant="outline"
               onClick={() => window.open(`/join/${code}`, "_blank")}
             >
-              Open player view
+              Open knight&apos;s view
             </Button>
           </Card>
         )}
 
+        {/* Game board */}
         {game && lobbyState?.players?.length ? (
           <Card className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <h2 className="text-lg font-semibold text-white">Game board</h2>
-                <p className="text-sm text-white/60">
-                  Success {game.scores.success} · Fail {game.scores.fail}
-                </p>
-                <p className="text-xs text-white/50">
-                  Vote tracker: {game.teamRejections}/5 rejects
-                </p>
+                <h2 className="font-display text-base font-semibold text-[var(--foreground)]">
+                  The Quest Board
+                </h2>
+                <div className="mt-1 flex flex-wrap gap-4 text-sm text-[var(--parchment-dim)]">
+                  <span>
+                    <span className="text-[var(--realm-green-bright)]">
+                      {game.scores.success}
+                    </span>{" "}
+                    victories
+                  </span>
+                  <span>
+                    <span className="text-[var(--crimson-bright)]">
+                      {game.scores.fail}
+                    </span>{" "}
+                    betrayals
+                  </span>
+                  <span>{game.teamRejections}/5 rejections</span>
+                </div>
                 {game.phase === "assassination" && (
-                  <p className="text-xs text-amber-200">
-                    Assassin is choosing Merlin.
+                  <p className="mt-2 text-xs text-[var(--gold)] font-display tracking-wide">
+                    ⚔ The Assassin is choosing…
                   </p>
                 )}
                 {game.phase === "complete" && (
-                  <div className="space-y-1 text-xs">
+                  <div className="mt-2 space-y-0.5 text-sm">
                     <p
-                      className={`${
-                        game.winner === "evil" ? "text-rose-200" : "text-emerald-200"
+                      className={`font-display font-semibold ${
+                        game.winner === "evil"
+                          ? "text-[var(--crimson-bright)]"
+                          : "text-[var(--realm-green-bright)]"
                       }`}
                     >
-                      Winner: {game.winner === "evil" ? "Evil" : "Good"}
-                    </p>
-                    <p className="text-white/70">
-                      <span
-                        className={
-                          game.winner === "good"
-                            ? "font-semibold text-emerald-200"
-                            : "font-semibold text-rose-200"
-                        }
-                      >
-                        Good: {game.winner === "good" ? "WIN" : "LOSS"}
-                      </span>
-                      {" · "}
-                      <span
-                        className={
-                          game.winner === "evil"
-                            ? "font-semibold text-emerald-200"
-                            : "font-semibold text-rose-200"
-                        }
-                      >
-                        Evil: {game.winner === "evil" ? "WIN" : "LOSS"}
-                      </span>
+                      {game.winner === "evil"
+                        ? "Evil claims the realm"
+                        : "The realm is saved"}
                     </p>
                   </div>
                 )}
@@ -373,43 +361,44 @@ export default function HostLobbyPage() {
           </Card>
         ) : null}
 
+        {/* Lobby settings */}
         {lobbyState?.gameState === "lobby" && (
-          <Card className="space-y-4">
+          <Card className="space-y-5">
             <div>
-              <h2 className="text-lg font-semibold text-white">
-                Lobby settings
+              <h2 className="font-display text-base font-semibold text-[var(--foreground)]">
+                Council Settings
               </h2>
-              <p className="text-sm text-white/60">
-                Update players, roles, and extras before starting.
+              <p className="mt-1 text-sm text-[var(--parchment-dim)]">
+                Amend the council before the quest begins.
               </p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
-                Lobby name
+              <label className="font-display text-xs uppercase tracking-[0.2em] text-[var(--gold-dim)]">
+                Council Name
               </label>
               <Input
                 value={editLobbyName}
-                onChange={(event) => setEditLobbyName(event.target.value)}
-                placeholder="Avalon Night"
+                onChange={(e) => setEditLobbyName(e.target.value)}
+                placeholder="The Round Table"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
-                Players ({editPlayers.length})
+              <label className="font-display text-xs uppercase tracking-[0.2em] text-[var(--gold-dim)]">
+                Knights ({editPlayers.length})
               </label>
               <div className="space-y-2">
                 {editPlayers.map((player, index) => (
                   <div key={player.id ?? index} className="flex gap-2">
                     <Input
                       value={player.name}
-                      onChange={(event) => {
+                      onChange={(e) => {
                         const next = [...editPlayers];
-                        next[index] = { ...next[index], name: event.target.value };
+                        next[index] = { ...next[index], name: e.target.value };
                         setEditPlayers(next);
                       }}
-                      placeholder={`Player ${index + 1}`}
+                      placeholder={`Knight ${index + 1}`}
                     />
                     <Button
                       type="button"
@@ -427,66 +416,44 @@ export default function HostLobbyPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() =>
-                  setEditPlayers([...editPlayers, { name: "" }])
-                }
+                onClick={() => setEditPlayers([...editPlayers, { name: "" }])}
                 disabled={editPlayers.length >= 10}
               >
-                Add player
+                + Add knight
               </Button>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
-                Special roles
+              <label className="font-display text-xs uppercase tracking-[0.2em] text-[var(--gold-dim)]">
+                Special Characters
               </label>
               <div className="flex flex-wrap gap-2">
-                <TogglePill
-                  active={roleOptions.percival}
-                  label="Percival"
-                  onClick={() =>
-                    setRoleOptions((prev) => ({
-                      ...prev,
-                      percival: !prev.percival
-                    }))
-                  }
-                />
-                <TogglePill
-                  active={roleOptions.morgana}
-                  label="Morgana"
-                  onClick={() =>
-                    setRoleOptions((prev) => ({
-                      ...prev,
-                      morgana: !prev.morgana
-                    }))
-                  }
-                />
-                <TogglePill
-                  active={roleOptions.mordred}
-                  label="Mordred"
-                  onClick={() =>
-                    setRoleOptions((prev) => ({
-                      ...prev,
-                      mordred: !prev.mordred
-                    }))
-                  }
-                />
-                <TogglePill
-                  active={roleOptions.oberon}
-                  label="Oberon"
-                  onClick={() =>
-                    setRoleOptions((prev) => ({
-                      ...prev,
-                      oberon: !prev.oberon
-                    }))
-                  }
-                />
+                {(
+                  [
+                    { key: "percival", label: "Percival" },
+                    { key: "morgana", label: "Morgana" },
+                    { key: "mordred", label: "Mordred" },
+                    { key: "oberon", label: "Oberon" }
+                  ] as const
+                ).map(({ key, label }) => (
+                  <TogglePill
+                    key={key}
+                    active={roleOptions[key]}
+                    label={label}
+                    onClick={() =>
+                      setRoleOptions((prev) => ({
+                        ...prev,
+                        [key]: !prev[key]
+                      }))
+                    }
+                  />
+                ))}
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
-                Extras
+              <label className="font-display text-xs uppercase tracking-[0.2em] text-[var(--gold-dim)]">
+                Ancient Relics
               </label>
               <div className="flex flex-wrap gap-2">
                 <TogglePill
@@ -497,22 +464,22 @@ export default function HostLobbyPage() {
               </div>
             </div>
 
-            <div className="space-y-1 rounded-2xl border border-white/10 bg-black/30 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">
-                Role mix
+            <div className="rounded-xl border border-[rgba(201,168,76,0.15)] bg-[#07090d] p-4 space-y-1">
+              <p className="font-display text-xs uppercase tracking-[0.2em] text-[var(--gold-dim)]">
+                Council Composition
               </p>
-              <p className="text-sm text-white">
+              <p className="text-sm text-[var(--foreground)]">
                 {roleSummary.length ? roleSummary.join(" · ") : "—"}
               </p>
               {roleConfig.errors.length > 0 && (
-                <p className="text-xs text-rose-300">
+                <p className="text-xs text-[var(--crimson-bright)]">
                   {roleConfig.errors.join(" ")}
                 </p>
               )}
             </div>
 
             {editError && (
-              <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+              <div className="rounded-xl border border-[rgba(155,32,32,0.4)] bg-[rgba(107,18,18,0.3)] px-4 py-3 text-sm text-[var(--crimson-bright)]">
                 {editError}
               </div>
             )}
@@ -523,18 +490,18 @@ export default function HostLobbyPage() {
                 onClick={async () => {
                   if (!hostSecret) return;
                   setEditError(null);
-                  if (editPlayers.some((player) => player.name.trim().length === 0)) {
-                    setEditError("All player names must be filled out.");
+                  if (editPlayers.some((p) => p.name.trim().length === 0)) {
+                    setEditError("All knights must be named.");
                     return;
                   }
                   if (editPlayers.length < 5 || editPlayers.length > 10) {
-                    setEditError("Lobby must have 5 to 10 players.");
+                    setEditError("The council must have 5 to 10 knights.");
                     return;
                   }
-                  const names = editPlayers.map((player) => player.name.trim());
+                  const names = editPlayers.map((p) => p.name.trim());
                   const duplicate = findDuplicate(names);
                   if (duplicate) {
-                    setEditError(`Duplicate player name: ${duplicate}`);
+                    setEditError(`Two knights share the name "${duplicate}".`);
                     return;
                   }
                   if (roleConfig.errors.length) {
@@ -546,9 +513,9 @@ export default function HostLobbyPage() {
                     await updateLobby(code, {
                       hostSecret,
                       lobbyName: editLobbyName.trim() || undefined,
-                      slots: editPlayers.map((player) => ({
-                        id: player.id,
-                        name: player.name
+                      slots: editPlayers.map((p) => ({
+                        id: p.id,
+                        name: p.name
                       })),
                       roles: roleConfig.roles,
                       ladyEnabled
@@ -558,7 +525,7 @@ export default function HostLobbyPage() {
                     setSavedVisible(true);
                   } catch (err) {
                     setEditError(
-                      err instanceof Error ? err.message : "Update failed."
+                      err instanceof Error ? err.message : "The change could not be issued."
                     );
                   } finally {
                     setSaving(false);
@@ -567,30 +534,28 @@ export default function HostLobbyPage() {
                 disabled={saving || !dirty}
                 className={`${
                   dirty
-                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-400"
-                    : "bg-emerald-500/40 text-white/70"
+                    ? "bg-[var(--realm-green-light)] text-white shadow-lg hover:bg-[var(--realm-green-bright)]"
+                    : "bg-[var(--realm-green)]/40 text-white/50"
                 }`}
               >
-                {saving
-                  ? "Saving..."
-                  : dirty
-                    ? "Save changes"
-                    : "Saved"}
+                {saving ? "Issuing change" : dirty ? "Issue Change" : "Changed"}
               </Button>
               {savedVisible && (
-                <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-200">
-                  Saved
+                <span className="rounded-full border border-[rgba(42,122,74,0.5)] bg-[rgba(26,74,46,0.5)] px-3 py-0.5 text-xs font-display text-[var(--realm-green-bright)]">
+                  Sealed ✦
                 </span>
               )}
             </div>
           </Card>
         )}
 
+        {/* Admin */}
         <Card className="space-y-3">
-          <h2 className="text-lg font-semibold text-white">Admin controls</h2>
+          <h2 className="font-display text-base font-semibold text-[var(--foreground)]">
+            The King&apos;s Command
+          </h2>
           <div className="flex flex-wrap gap-3">
             <Button
-              type="button"
               variant="outline"
               onClick={async () => {
                 if (!hostSecret) return;
@@ -598,16 +563,18 @@ export default function HostLobbyPage() {
                   await abortGame(code, hostSecret);
                 } catch (err) {
                   setError(
-                    err instanceof Error ? err.message : "Unable to abort game."
+                    err instanceof Error
+                      ? err.message
+                      : "The quest could not be recalled."
                   );
                 }
               }}
               disabled={lobbyState?.gameState !== "started"}
+              className="border-[rgba(155,32,32,0.45)] text-[var(--crimson-bright)] hover:bg-[rgba(107,18,18,0.2)]"
             >
-              {game?.phase === "complete" ? "Finish game" : "Abort game"}
+              {game?.phase === "complete" ? "End Council" : "Recall the Quest"}
             </Button>
             <Button
-              type="button"
               variant="ghost"
               onClick={async () => {
                 if (!hostSecret) return;
@@ -616,56 +583,62 @@ export default function HostLobbyPage() {
                   router.push("/");
                 } catch (err) {
                   setError(
-                    err instanceof Error ? err.message : "Unable to delete lobby."
+                    err instanceof Error
+                      ? err.message
+                      : "The council could not be dissolved."
                   );
                 }
               }}
             >
-              Delete lobby
+              Dissolve Council
             </Button>
           </div>
         </Card>
 
+        {/* Knights list */}
         <Card className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Players</h2>
+            <h2 className="font-display text-base font-semibold text-[var(--foreground)]">
+              The Knights
+            </h2>
             <Button
-              type="button"
               onClick={handleStart}
               disabled={!allJoined || lobbyState?.gameState === "started"}
             >
               {lobbyState?.gameState === "started"
-                ? "Game started"
-                : "Start game"}
+                ? "Quest underway"
+                : "Dispatch the Quest"}
             </Button>
           </div>
           <div className="space-y-2">
             {lobbyState?.players.map((player) => (
               <div
                 key={player.id}
-                className={`flex items-center justify-between rounded-2xl border border-white/10 px-4 py-3 ${
+                className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-all ${
                   player.claimed
-                    ? "bg-white/10"
-                    : "bg-black/30 text-white/50"
+                    ? "border-[rgba(201,168,76,0.2)] bg-[rgba(201,168,76,0.05)]"
+                    : "border-[rgba(201,168,76,0.08)] bg-[#07090d] opacity-60"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <span
                     className={`h-2 w-2 rounded-full ${
                       player.claimed
-                        ? "bg-emerald-400"
-                        : "bg-white/30 animate-pulse"
+                        ? "bg-[var(--realm-green-bright)]"
+                        : "bg-[var(--parchment-dim)]/30 animate-pulse"
                     }`}
                   />
-                  <span className="text-sm font-semibold">{player.name}</span>
+                  <span className="text-sm text-[var(--foreground)]">
+                    {player.name}
+                  </span>
                 </div>
                 {player.claimed && (
                   <Button
-                    type="button"
                     variant="ghost"
                     onClick={() => handleReset(player.id)}
+                    className="text-xs text-[var(--parchment-dim)]/60 hover:text-[var(--crimson-bright)]"
                   >
-                    Reset
+                    Release
                   </Button>
                 )}
               </div>
@@ -680,9 +653,7 @@ export default function HostLobbyPage() {
 function findDuplicate(values: string[]): string | null {
   const seen = new Set<string>();
   for (const value of values) {
-    if (seen.has(value)) {
-      return value;
-    }
+    if (seen.has(value)) return value;
     seen.add(value);
   }
   return null;

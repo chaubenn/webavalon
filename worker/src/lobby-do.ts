@@ -579,6 +579,7 @@ export class LobbyDurableObject implements DurableObject {
     if (!lobby.game) {
       return;
     }
+    const ladyState = this.ensureLadyState(lobby.game, lobby.ladyEnabled);
     lobby.game.missionIndex += 1;
     lobby.game.captainIndex = this.nextCaptainIndex(lobby);
     lobby.game.currentTeam = [];
@@ -586,7 +587,7 @@ export class LobbyDurableObject implements DurableObject {
     lobby.game.missionVotes = {};
     lobby.game.lastTeamVote = undefined;
     lobby.game.teamRejections = 0;
-    lobby.game.lady.revealed = undefined;
+    ladyState.revealed = undefined;
     lobby.game.phase = "team_select";
   }
 
@@ -598,8 +599,9 @@ export class LobbyDurableObject implements DurableObject {
     if (!lobby.game || lobby.gameState !== "started") {
       return this.json({ error: "Game not started." }, 409);
     }
+    const ladyState = this.ensureLadyState(lobby.game, lobby.ladyEnabled);
     if (
-      !lobby.game.lady.enabled ||
+      !ladyState.enabled ||
       lobby.game.phase === "complete" ||
       lobby.game.phase === "assassination"
     ) {
@@ -611,11 +613,11 @@ export class LobbyDurableObject implements DurableObject {
       return this.json({ error: "Session invalid." }, 403);
     }
 
-    if (slot.id !== lobby.game.lady.holderId) {
+    if (slot.id !== ladyState.holderId) {
       return this.json({ error: "Only the Lady holder can act." }, 403);
     }
 
-    const ladyAvailableFrom = 1;
+    const ladyAvailableFrom = 2;
     if (lobby.game.missionIndex < ladyAvailableFrom) {
       return this.json(
         { error: "Lady of the Lake is not available yet." },
@@ -624,8 +626,8 @@ export class LobbyDurableObject implements DurableObject {
     }
 
     if (
-      lobby.game.lady.lastUsedMissionIndex !== null &&
-      lobby.game.missionIndex <= lobby.game.lady.lastUsedMissionIndex
+      ladyState.lastUsedMissionIndex !== null &&
+      lobby.game.missionIndex <= ladyState.lastUsedMissionIndex
     ) {
       return this.json(
         { error: "Lady of the Lake can only be used once per round." },
@@ -645,26 +647,26 @@ export class LobbyDurableObject implements DurableObject {
     const roleId = lobby.assignments?.[targetId];
     const alignment = roleId ? roleAlignment(roleId) : "good";
 
-    lobby.game.lady.revealed = { targetId, alignment, viewerId: slot.id };
-    lobby.game.lady.holderId = targetId;
-    lobby.game.lady.lastUsedMissionIndex = lobby.game.missionIndex;
-    if (!gameLadyUses(lobby.game.lady)) {
-      lobby.game.lady.uses = [];
+    ladyState.revealed = { targetId, alignment, viewerId: slot.id };
+    ladyState.holderId = targetId;
+    ladyState.lastUsedMissionIndex = lobby.game.missionIndex;
+    if (!gameLadyUses(ladyState)) {
+      ladyState.uses = [];
     }
     const useRecord = {
       missionIndex: lobby.game.missionIndex,
       viewerId: slot.id,
       targetId
     };
-    const existingUseIndex = lobby.game.lady.uses.findIndex(
+    const existingUseIndex = ladyState.uses.findIndex(
       (entry) =>
         entry.missionIndex === useRecord.missionIndex &&
         entry.viewerId === useRecord.viewerId
     );
     if (existingUseIndex >= 0) {
-      lobby.game.lady.uses[existingUseIndex] = useRecord;
+      ladyState.uses[existingUseIndex] = useRecord;
     } else {
-      lobby.game.lady.uses.push(useRecord);
+      ladyState.uses.push(useRecord);
     }
 
     await this.saveLobby(lobby);
@@ -1094,12 +1096,13 @@ export class LobbyDurableObject implements DurableObject {
       ? teamVotes.filter((vote) => vote === "reject").length
       : undefined;
 
+    const ladyState = this.ensureLadyState(game, lobby.ladyEnabled);
     const missionVotes = Object.values(game.missionVotes);
     const missionVoteDone =
       missionVotes.length === game.currentTeam.length &&
       game.currentTeam.length > 0;
 
-    const ladyUses = gameLadyUses(game.lady) ? game.lady.uses : [];
+    const ladyUses = gameLadyUses(ladyState) ? ladyState.uses : [];
 
     const publicView: GamePublicView = {
       phase: game.phase,
@@ -1125,9 +1128,9 @@ export class LobbyDurableObject implements DurableObject {
       scores: game.scores,
       teamRejections: game.teamRejections,
       lady: {
-        enabled: game.lady.enabled,
-        holderId: game.lady.holderId,
-        lastUsedMissionIndex: game.lady.lastUsedMissionIndex
+        enabled: ladyState.enabled,
+        holderId: ladyState.holderId,
+        lastUsedMissionIndex: ladyState.lastUsedMissionIndex
       },
       ladyUses,
       lastTeamVote: game.lastTeamVote,
@@ -1142,13 +1145,13 @@ export class LobbyDurableObject implements DurableObject {
     const roleId = lobby.assignments?.[viewerSlotId];
     const alignment = roleId ? roleAlignment(roleId) : "good";
     const canFail = alignment === "evil";
-    const ladyAvailableFrom = 1;
+    const ladyAvailableFrom = 2;
     const canUseLady =
-      game.lady.enabled &&
-      viewerSlotId === game.lady.holderId &&
+      ladyState.enabled &&
+      viewerSlotId === ladyState.holderId &&
       game.missionIndex >= ladyAvailableFrom &&
-      (game.lady.lastUsedMissionIndex === null ||
-        game.missionIndex > game.lady.lastUsedMissionIndex) &&
+      (ladyState.lastUsedMissionIndex === null ||
+        game.missionIndex > ladyState.lastUsedMissionIndex) &&
       game.phase !== "complete" &&
       game.phase !== "assassination";
 
@@ -1163,10 +1166,10 @@ export class LobbyDurableObject implements DurableObject {
         canUseLady,
         ladyAvailableFrom,
         ladyReveal:
-          viewerSlotId === game.lady.revealed?.viewerId
+          viewerSlotId === ladyState.revealed?.viewerId
             ? {
-                targetId: game.lady.revealed.targetId,
-                alignment: game.lady.revealed.alignment
+                targetId: ladyState.revealed.targetId,
+                alignment: ladyState.revealed.alignment
               }
             : undefined
       }
@@ -1228,6 +1231,34 @@ export class LobbyDurableObject implements DurableObject {
       status,
       headers: { "Content-Type": "application/json" }
     });
+  }
+
+  private ensureLadyState(
+    game: GameState,
+    lobbyLadyEnabled: boolean
+  ): GameState["lady"] {
+    if (!game.lady) {
+      game.lady = {
+        enabled: Boolean(lobbyLadyEnabled),
+        holderId: null,
+        lastUsedMissionIndex: null,
+        uses: []
+      };
+      return game.lady;
+    }
+
+    game.lady.enabled = Boolean(game.lady.enabled);
+    if (typeof game.lady.holderId === "undefined") {
+      game.lady.holderId = null;
+    }
+    if (typeof game.lady.lastUsedMissionIndex === "undefined") {
+      game.lady.lastUsedMissionIndex = null;
+    }
+    if (!Array.isArray(game.lady.uses)) {
+      game.lady.uses = [];
+    }
+
+    return game.lady;
   }
 }
 
