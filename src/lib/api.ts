@@ -37,7 +37,7 @@ export type PlayerState = {
   player: { id: string; name: string };
   players: PlayerSlot[];
   role?: { id: RoleId; name: string; alignment: "good" | "evil" };
-  knowledge?: { name: string; tag: string }[];
+  knowledge?: { slotId: string; name: string; tag: string }[];
   roleConfig?: { roles: RoleId[] };
   ladyEnabled: boolean;
   game?: GamePlayerView;
@@ -63,6 +63,8 @@ export type GamePublicView = {
     | "complete";
   missionIndex: number;
   captainId: string | null;
+  captainIndex: number;
+  captainOrder: string[];
   missionSize: number;
   currentTeamIds: string[];
   teamVote?: {
@@ -91,6 +93,7 @@ export type GamePublicView = {
   lastTeamVote?: { approve: number; reject: number; approved: boolean };
   assassination?: { targetId: string; success: boolean };
   winner?: "good" | "evil";
+  roleReveal?: { id: string; name: string; roleName: string; alignment: "good" | "evil" }[];
 };
 
 export type GamePlayerView = GamePublicView & {

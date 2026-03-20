@@ -334,6 +334,14 @@ export default function HostLobbyPage() {
                     betrayals
                   </span>
                   <span>{game.teamRejections}/5 rejections</span>
+                  <span>
+                    ⚔ Captain:{" "}
+                    <span className="text-[var(--foreground)]">
+                      {game.captainId
+                        ? (lobbyState.players.find((p) => p.id === game.captainId)?.name ?? "—")
+                        : "—"}
+                    </span>
+                  </span>
                 </div>
                 {game.phase === "assassination" && (
                   <p className="mt-2 text-xs text-[var(--gold)] font-display tracking-wide">

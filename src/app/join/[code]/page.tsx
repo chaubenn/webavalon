@@ -85,7 +85,7 @@ function GameEndOverlay({
       className={`fixed inset-0 z-50 flex items-center justify-center px-6 ${bgClass}`}
       style={{ backdropFilter: "blur(2px)" }}
     >
-      <div className="animate-victory-rise flex max-w-sm w-full flex-col items-center gap-6 text-center">
+      <div className="animate-victory-rise flex max-w-md w-full flex-col items-center gap-6 text-center overflow-y-auto max-h-screen py-8">
         <div
           className={`text-7xl ${isGoodWin ? "text-[var(--gold)]" : "text-[var(--crimson-bright)]"}`}
           style={{ filter: `drop-shadow(0 0 24px ${isGoodWin ? "var(--gold)" : "var(--crimson-bright)"})` }}
@@ -146,6 +146,40 @@ function GameEndOverlay({
             }`}
           >
             Assassination {game.assassination.success ? "succeeded" : "failed"}
+          </div>
+        )}
+
+        {/* Role reveal */}
+        {game.roleReveal && game.roleReveal.length > 0 && (
+          <div className="w-full space-y-2">
+            <p className="font-display text-xs uppercase tracking-[0.2em] text-[var(--gold-dim)] text-center">
+              All Roles Revealed
+            </p>
+            <div className="grid grid-cols-2 gap-2 w-full">
+              {game.roleReveal.map((entry) => (
+                <div
+                  key={entry.id}
+                  className={`flex items-center justify-between rounded-xl border px-3 py-2 text-xs ${
+                    entry.alignment === "good"
+                      ? "border-[rgba(42,122,74,0.35)] bg-[rgba(26,74,46,0.4)]"
+                      : "border-[rgba(155,32,32,0.35)] bg-[rgba(107,18,18,0.4)]"
+                  }`}
+                >
+                  <span className="text-[var(--foreground)] truncate mr-2">
+                    {entry.name}
+                  </span>
+                  <span
+                    className={`shrink-0 font-display text-[0.65rem] tracking-wide ${
+                      entry.alignment === "good"
+                        ? "text-[var(--realm-green-bright)]"
+                        : "text-[var(--crimson-bright)]"
+                    }`}
+                  >
+                    {entry.roleName}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -243,6 +277,10 @@ export default function JoinLobbyPage() {
 
   const [showLaked, setShowLaked] = useState(false);
   const prevLadyHolderRef = useRef<string | null | undefined>(undefined);
+
+  const [ladyRevealVisible, setLadyRevealVisible] = useState(false);
+  const ladyRevealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showCaptainOrder, setShowCaptainOrder] = useState(false);
 
   useEffect(() => {
     getLobbyState(code)
@@ -348,6 +386,18 @@ export default function JoinLobbyPage() {
     prevLadyHolderRef.current = holderId;
   }, [game?.lady.holderId, playerState?.player.id]);
 
+  // Reset lady reveal when the target changes (new use)
+  useEffect(() => {
+    setLadyRevealVisible(false);
+    if (ladyRevealTimerRef.current) clearTimeout(ladyRevealTimerRef.current);
+  }, [game?.player?.ladyReveal?.targetId]);
+
+  const handleLadyRevealTap = () => {
+    if (ladyRevealTimerRef.current) clearTimeout(ladyRevealTimerRef.current);
+    setLadyRevealVisible(true);
+    ladyRevealTimerRef.current = setTimeout(() => setLadyRevealVisible(false), 3000);
+  };
+
   const handleClaim = async (slotId: string) => {
     setError(null);
     try {
@@ -402,6 +452,16 @@ export default function JoinLobbyPage() {
     if (!playerState?.role) return null;
     return playerState.role.alignment === "good" ? "Loyal" : "Evil";
   }, [playerState?.role]);
+
+  // Assassin's known evil teammates (by slotId) — used to disable them in assassination selector
+  const evilTeammateMap = useMemo(() => {
+    const map = new Map<string, string>(); // slotId → role tag
+    if (!playerState?.knowledge) return map;
+    for (const entry of playerState.knowledge) {
+      map.set(entry.slotId, entry.tag);
+    }
+    return map;
+  }, [playerState?.knowledge]);
 
   const roleSummary = useMemo(() => {
     if (!roleConfig) return [];
@@ -630,10 +690,10 @@ export default function JoinLobbyPage() {
               {game && players.length > 0 && (
                 <div className="space-y-4">
                   {/* Status strip */}
-                  <div className="rounded-xl border border-[rgba(201,168,76,0.15)] bg-[#07090d] p-4 text-sm">
+                  <div className="rounded-xl border border-[rgba(201,168,76,0.15)] bg-[#07090d] p-4 text-sm space-y-3">
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[var(--parchment-dim)]">
-                      <span>
-                        <span className="font-display text-xs uppercase tracking-[0.15em] text-[var(--gold-dim)] mr-2">
+                      <span className="flex items-center gap-2">
+                        <span className="font-display text-xs uppercase tracking-[0.15em] text-[var(--gold-dim)]">
                           Captain
                         </span>
                         <span className="text-[var(--foreground)]">
@@ -641,6 +701,17 @@ export default function JoinLobbyPage() {
                             ? (playerMap.get(game.captainId) ?? "Unknown")
                             : "—"}
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowCaptainOrder((v) => !v)}
+                          className={`rounded-full border px-2 py-0.5 text-xs font-display tracking-wide transition ${
+                            showCaptainOrder
+                              ? "border-[var(--gold-dim)] bg-[rgba(201,168,76,0.1)] text-[var(--gold)]"
+                              : "border-[rgba(201,168,76,0.2)] text-[var(--parchment-dim)]/60 hover:text-[var(--gold)]"
+                          }`}
+                        >
+                          Order
+                        </button>
                       </span>
                       <span className="h-3 w-px bg-[var(--gold-dim)]/30" />
                       <span className="capitalize">
@@ -649,6 +720,50 @@ export default function JoinLobbyPage() {
                       <span className="h-3 w-px bg-[var(--gold-dim)]/30" />
                       <span>{game.teamRejections}/5 rejections</span>
                     </div>
+
+                    {/* Captain rotation panel */}
+                    {showCaptainOrder && (() => {
+                      const order = game.captainOrder;
+                      const currentIdx = game.captainIndex;
+                      return (
+                        <div className="border-t border-[rgba(201,168,76,0.1)] pt-3 space-y-2 animate-fade-in">
+                          <p className="font-display text-xs uppercase tracking-[0.2em] text-[var(--gold-dim)]">
+                            Captain Rotation
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {order.map((playerId, i) => {
+                              const isCurrent = i === currentIdx;
+                              const isPast = game.history.some(
+                                (m) => m.leaderId === playerId
+                              ) && !isCurrent;
+                              return (
+                                <span
+                                  key={playerId}
+                                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-all ${
+                                    isCurrent
+                                      ? "border-[var(--gold)] bg-[rgba(201,168,76,0.12)] text-[var(--gold)] font-semibold"
+                                      : isPast
+                                        ? "border-[rgba(201,168,76,0.1)] bg-transparent text-[var(--parchment-dim)]/40 line-through"
+                                        : "border-[rgba(201,168,76,0.15)] bg-transparent text-[var(--parchment-dim)]"
+                                  }`}
+                                >
+                                  <span className="font-display text-[0.65rem] text-[var(--gold-dim)]">
+                                    {i + 1}
+                                  </span>
+                                  {playerMap.get(playerId) ?? "?"}
+                                  {isCurrent && (
+                                    <span className="text-[var(--gold)]">◀</span>
+                                  )}
+                                </span>
+                              );
+                            })}
+                          </div>
+                          <p className="text-xs text-[var(--parchment-dim)]/40 italic">
+                            Circular — repeats from position 1 after the last
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Mission board */}
@@ -662,39 +777,55 @@ export default function JoinLobbyPage() {
                     </div>
                   )}
 
-                  {/* Lady reveal result */}
+                  {/* Lady reveal result — tap to show for 3 seconds */}
                   {game.player.ladyReveal && (
-                    <div
-                      className={`rounded-2xl border px-5 py-4 text-center space-y-2 animate-fade-in-scale ${
-                        game.player.ladyReveal.alignment === "good"
-                          ? "border-[rgba(42,122,74,0.5)] bg-[rgba(26,74,46,0.4)]"
-                          : "border-[rgba(155,32,32,0.5)] bg-[rgba(107,18,18,0.4)]"
-                      }`}
-                    >
+                    <div className="space-y-2">
                       <p className="font-display text-xs uppercase tracking-[0.2em] text-[var(--parchment-dim)]/70">
                         ◈ Lady Reveals
                       </p>
                       <p className="text-sm text-[var(--parchment-dim)]">
-                        {playerMap.get(game.player.ladyReveal.targetId) ??
-                          "That knight"}{" "}
+                        {playerMap.get(game.player.ladyReveal.targetId) ?? "That knight"}{" "}
                         is…
                       </p>
-                      <p
-                        className={`font-display text-3xl font-semibold tracking-widest ${
-                          game.player.ladyReveal.alignment === "good"
-                            ? "text-[var(--realm-green-bright)]"
-                            : "text-[var(--crimson-bright)]"
-                        }`}
-                        style={{
-                          filter: `drop-shadow(0 0 12px ${
+                      {ladyRevealVisible ? (
+                        <button
+                          type="button"
+                          onClick={handleLadyRevealTap}
+                          className={`w-full rounded-2xl border px-5 py-5 text-center animate-fade-in-scale ${
                             game.player.ladyReveal.alignment === "good"
-                              ? "var(--realm-green-bright)"
-                              : "var(--crimson-bright)"
-                          })`
-                        }}
-                      >
-                        {game.player.ladyReveal.alignment.toUpperCase()}
-                      </p>
+                              ? "border-[rgba(42,122,74,0.5)] bg-[rgba(26,74,46,0.4)]"
+                              : "border-[rgba(155,32,32,0.5)] bg-[rgba(107,18,18,0.4)]"
+                          }`}
+                        >
+                          <p
+                            className={`font-display text-4xl font-semibold tracking-widest ${
+                              game.player.ladyReveal.alignment === "good"
+                                ? "text-[var(--realm-green-bright)]"
+                                : "text-[var(--crimson-bright)]"
+                            }`}
+                            style={{
+                              filter: `drop-shadow(0 0 16px ${
+                                game.player.ladyReveal.alignment === "good"
+                                  ? "var(--realm-green-bright)"
+                                  : "var(--crimson-bright)"
+                              })`
+                            }}
+                          >
+                            {game.player.ladyReveal.alignment.toUpperCase()}
+                          </p>
+                          <p className="mt-2 text-xs text-[var(--parchment-dim)]/50">
+                            Tap to hide
+                          </p>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleLadyRevealTap}
+                          className="w-full rounded-2xl border border-[rgba(74,144,196,0.3)] bg-[rgba(14,26,46,0.5)] px-5 py-4 text-sm text-[var(--lady-blue-bright)] hover:bg-[rgba(14,26,46,0.8)] transition"
+                        >
+                          ◈ Tap to reveal their allegiance
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -986,25 +1117,48 @@ export default function JoinLobbyPage() {
                             </p>
                           </div>
                           <div className="grid gap-2">
-                            {players.map((player) => (
-                              <button
-                                key={player.id}
-                                type="button"
-                                onClick={() => setLadyTarget(player.id)}
-                                className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm transition-all ${
-                                  ladyTarget === player.id
-                                    ? "border-[var(--crimson-bright)] bg-[rgba(155,32,32,0.15)] text-[var(--foreground)]"
-                                    : "border-[rgba(155,32,32,0.15)] bg-[#07090d] text-[var(--parchment-dim)] hover:border-[rgba(155,32,32,0.3)]"
-                                }`}
-                              >
-                                <span>{player.name}</span>
-                                <span className="text-xs text-[var(--parchment-dim)]/60">
-                                  {ladyTarget === player.id
-                                    ? "Marked ⚔"
-                                    : "Tap to mark"}
-                                </span>
-                              </button>
-                            ))}
+                            {players.map((player) => {
+                              const isYou = player.id === playerState?.player.id;
+                              const teammateRole = evilTeammateMap.get(player.id);
+                              const isTeammate = Boolean(teammateRole);
+                              const isDisabled = isYou || isTeammate;
+                              return (
+                                <button
+                                  key={player.id}
+                                  type="button"
+                                  disabled={isDisabled}
+                                  onClick={() => {
+                                    if (!isDisabled) setLadyTarget(player.id);
+                                  }}
+                                  className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm transition-all ${
+                                    isDisabled
+                                      ? "border-[rgba(201,168,76,0.1)] bg-[#07090d]/60 cursor-not-allowed opacity-60"
+                                      : ladyTarget === player.id
+                                        ? "border-[var(--crimson-bright)] bg-[rgba(155,32,32,0.15)] text-[var(--foreground)]"
+                                        : "border-[rgba(155,32,32,0.15)] bg-[#07090d] text-[var(--parchment-dim)] hover:border-[rgba(155,32,32,0.3)]"
+                                  }`}
+                                >
+                                  <span>{player.name}</span>
+                                  <span
+                                    className={`text-xs ${
+                                      isTeammate
+                                        ? "text-[var(--crimson-bright)]/70"
+                                        : isYou
+                                          ? "text-[var(--parchment-dim)]/40"
+                                          : "text-[var(--parchment-dim)]/60"
+                                    }`}
+                                  >
+                                    {isTeammate
+                                      ? `${teammateRole} — your ally`
+                                      : isYou
+                                        ? "You"
+                                        : ladyTarget === player.id
+                                          ? "Marked ⚔"
+                                          : "Tap to mark"}
+                                  </span>
+                                </button>
+                              );
+                            })}
                           </div>
                           <Button
                             disabled={!ladyTarget || !token}
@@ -1068,6 +1222,39 @@ export default function JoinLobbyPage() {
                           Assassination{" "}
                           {game.assassination.success ? "succeeded" : "failed"}
                         </p>
+                      )}
+                      {/* Role reveal grid */}
+                      {game.roleReveal && game.roleReveal.length > 0 && (
+                        <div className="text-left space-y-2 pt-2">
+                          <p className="font-display text-xs uppercase tracking-[0.2em] text-[var(--gold-dim)]">
+                            Roles Revealed
+                          </p>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {game.roleReveal.map((entry) => (
+                              <div
+                                key={entry.id}
+                                className={`flex items-center justify-between rounded-lg border px-2.5 py-1.5 text-xs ${
+                                  entry.alignment === "good"
+                                    ? "border-[rgba(42,122,74,0.3)] bg-[rgba(26,74,46,0.3)]"
+                                    : "border-[rgba(155,32,32,0.3)] bg-[rgba(107,18,18,0.3)]"
+                                }`}
+                              >
+                                <span className="text-[var(--foreground)] truncate mr-2">
+                                  {entry.name}
+                                </span>
+                                <span
+                                  className={`shrink-0 font-display text-[0.65rem] ${
+                                    entry.alignment === "good"
+                                      ? "text-[var(--realm-green-bright)]"
+                                      : "text-[var(--crimson-bright)]"
+                                  }`}
+                                >
+                                  {entry.roleName}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
                       <button
                         type="button"

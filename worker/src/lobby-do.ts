@@ -56,6 +56,8 @@ type GamePublicView = {
   phase: GameState["phase"];
   missionIndex: number;
   captainId: string | null;
+  captainIndex: number;
+  captainOrder: string[];
   missionSize: number;
   currentTeamIds: string[];
   teamVote?: {
@@ -84,6 +86,7 @@ type GamePublicView = {
   lastTeamVote?: { approve: number; reject: number; approved: boolean };
   assassination?: { targetId: string; success: boolean };
   winner?: Alignment;
+  roleReveal?: { id: string; name: string; roleName: string; alignment: Alignment }[];
 };
 
 type GamePlayerView = GamePublicView & {
@@ -651,7 +654,7 @@ export class LobbyDurableObject implements DurableObject {
     ladyState.holderId = targetId;
     ladyState.lastUsedMissionIndex = lobby.game.missionIndex;
     if (!gameLadyUses(ladyState)) {
-      ladyState.uses = [];
+      (ladyState as GameState["lady"]).uses = [];
     }
     const useRecord = {
       missionIndex: lobby.game.missionIndex,
@@ -1064,6 +1067,7 @@ export class LobbyDurableObject implements DurableObject {
         alignment: roleAlignment(knowledge.roleId)
       },
       knowledge: knowledge.entries.map((entry) => ({
+        slotId: entry.slotId,
         name: entry.name,
         tag: entry.tag
       })),
@@ -1073,6 +1077,8 @@ export class LobbyDurableObject implements DurableObject {
     };
   }
 
+  private buildGameView(lobby: LobbyState): GamePublicView | undefined;
+  private buildGameView(lobby: LobbyState, viewerSlotId: string): GamePlayerView | undefined;
   private buildGameView(
     lobby: LobbyState,
     viewerSlotId?: string
@@ -1108,6 +1114,8 @@ export class LobbyDurableObject implements DurableObject {
       phase: game.phase,
       missionIndex: game.missionIndex,
       captainId,
+      captainIndex: game.captainIndex,
+      captainOrder: lobby.playerSlots.map((s) => s.id),
       missionSize,
       currentTeamIds: game.currentTeam,
       teamVote: {
@@ -1135,7 +1143,16 @@ export class LobbyDurableObject implements DurableObject {
       ladyUses,
       lastTeamVote: game.lastTeamVote,
       assassination: game.assassination,
-      winner: game.winner
+      winner: game.winner,
+      roleReveal:
+        game.phase === "complete" && lobby.assignments
+          ? lobby.playerSlots.map((slot) => ({
+              id: slot.id,
+              name: slot.name,
+              roleName: roleLabel(lobby.assignments![slot.id]),
+              alignment: roleAlignment(lobby.assignments![slot.id])
+            }))
+          : undefined
     };
 
     if (!viewerSlotId) {

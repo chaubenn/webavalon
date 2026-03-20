@@ -206,10 +206,11 @@ export function buildKnowledgeMap(
         if (evilSlot.id === slot.id) {
           continue;
         }
+        const evilRoleId = roleBySlot.get(evilSlot.id) as RoleId;
         entries.push({
           slotId: evilSlot.id,
           name: evilSlot.name,
-          tag: "Evil"
+          tag: ROLE_DEFINITIONS[evilRoleId].name
         });
       }
     }

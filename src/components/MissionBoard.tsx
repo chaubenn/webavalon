@@ -11,13 +11,12 @@ type MissionBoardProps = {
 
 type VoteCard = "hidden" | "success" | "fail";
 
-function shuffle<T>(arr: T[]): T[] {
-  const result = [...arr];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
+/** Successes on the left, fails on the right — deterministic, no shuffle. */
+function orderedCards(successCount: number, failCount: number): VoteCard[] {
+  return [
+    ...Array<VoteCard>(successCount).fill("success"),
+    ...Array<VoteCard>(failCount).fill("fail")
+  ];
 }
 
 export function MissionBoard({ players, game }: MissionBoardProps) {
@@ -38,13 +37,7 @@ export function MissionBoard({ players, game }: MissionBoardProps) {
       for (const m of history) {
         const failCount = m.failCount ?? 0;
         const successCount = m.teamIds.length - failCount;
-        init.set(
-          m.index,
-          shuffle([
-            ...Array<VoteCard>(successCount).fill("success"),
-            ...Array<VoteCard>(failCount).fill("fail")
-          ])
-        );
+        init.set(m.index, orderedCards(successCount, failCount));
       }
       setRevealMaps(init);
       return;
@@ -58,19 +51,18 @@ export function MissionBoard({ players, game }: MissionBoardProps) {
 
     const failCount = newMission.failCount ?? 0;
     const successCount = newMission.teamIds.length - failCount;
-    const finalCards = shuffle([
-      ...Array<VoteCard>(successCount).fill("success"),
-      ...Array<VoteCard>(failCount).fill("fail")
-    ]);
+    const finalCards = orderedCards(successCount, failCount);
     const mIdx = newMission.index;
     const teamSize = newMission.teamIds.length;
 
+    // Start all hidden
     setRevealMaps((prev) => {
       const next = new Map(prev);
       next.set(mIdx, Array<VoteCard>(teamSize).fill("hidden"));
       return next;
     });
 
+    // Reveal one by one — left to right (success first, then fails)
     for (let i = 0; i < teamSize; i++) {
       const cardI = i;
       setTimeout(() => {
@@ -118,19 +110,27 @@ export function MissionBoard({ players, game }: MissionBoardProps) {
             ? (record?.teamIds.length ?? 0) - failCount
             : 0;
 
+          // Result label only shows after all cards are flipped
           let resultLabel = "Pending";
           if (isComplete) {
-            resultLabel = record?.success ? "Victory" : "Betrayal";
+            resultLabel = allRevealed
+              ? record?.success
+                ? "Victory"
+                : "Betrayal"
+              : "Revealing…";
           } else if (isCurrent) {
             if (teamIds.length === 0) resultLabel = "Awaiting fellowship";
             else if (game.phase === "mission_vote") resultLabel = "Quest underway";
             else resultLabel = "Assembled";
           }
 
+          // Card tone only goes green/red after every vote card has flipped
           const cardTone = isComplete
-            ? record?.success
-              ? "border-[rgba(42,122,74,0.6)] bg-[var(--realm-green)]"
-              : "border-[rgba(155,32,32,0.6)] bg-[var(--crimson)]"
+            ? !allRevealed
+              ? "border-[rgba(201,168,76,0.2)] bg-[#0a0d12]"
+              : record?.success
+                ? "border-[rgba(42,122,74,0.6)] bg-[var(--realm-green)]"
+                : "border-[rgba(155,32,32,0.6)] bg-[var(--crimson)]"
             : isCurrent
               ? "border-[rgba(201,168,76,0.4)] bg-[rgba(201,168,76,0.05)]"
               : "border-[rgba(201,168,76,0.12)] bg-[#0a0d12]";
@@ -138,16 +138,14 @@ export function MissionBoard({ players, game }: MissionBoardProps) {
           return (
             <div
               key={missionIndex}
-              className={`relative rounded-2xl border p-4 transition-all ${cardTone}`}
+              className={`relative rounded-2xl border p-4 transition-all duration-700 ${cardTone}`}
             >
               {/* Header */}
               <div className="flex items-center justify-between">
                 <span className="font-display text-sm font-semibold tracking-wide text-[var(--foreground)]">
                   Quest {missionIndex + 1}
                   {isWin && (
-                    <span className="ml-2 inline-block text-[var(--gold)]">
-                      ♔
-                    </span>
+                    <span className="ml-2 inline-block text-[var(--gold)]">♔</span>
                   )}
                 </span>
                 <span className="text-xs text-[var(--parchment-dim)]">
@@ -155,24 +153,53 @@ export function MissionBoard({ players, game }: MissionBoardProps) {
                 </span>
               </div>
 
-              {/* Result label */}
-              <div
-                className={`mt-1 text-xs font-display tracking-wide ${
-                  isComplete
-                    ? record?.success
-                      ? "text-[var(--realm-green-bright)]"
-                      : "text-[var(--crimson-bright)]"
-                    : isCurrent
-                      ? "text-[var(--gold)]"
-                      : "text-[var(--parchment-dim)]"
-                }`}
-              >
-                {resultLabel}
+              {/* Result label + captain */}
+              <div className="mt-1 flex items-baseline justify-between gap-2">
+                <div
+                  className={`text-xs font-display tracking-wide transition-colors duration-700 ${
+                    isComplete && allRevealed
+                      ? record?.success
+                        ? "text-[var(--realm-green-bright)]"
+                        : "text-[var(--crimson-bright)]"
+                      : isCurrent
+                        ? "text-[var(--gold)]"
+                        : "text-[var(--parchment-dim)]"
+                  }`}
+                >
+                  {resultLabel}
+                </div>
+                {isComplete && record.leaderId && (
+                  <span className="text-xs text-[var(--parchment-dim)]/60 shrink-0">
+                    ⚔ {playerMap.get(record.leaderId) ?? "Unknown"}
+                  </span>
+                )}
               </div>
 
-              {/* Vote cards — animated reveal */}
+              {/* Fellowship — shown above vote cards, clearly separate */}
+              {teamNames.length > 0 && (
+                <div className="mt-3 space-y-1">
+                  <p className="font-display text-xs uppercase tracking-[0.15em] text-[var(--gold-dim)]">
+                    Fellowship
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {teamNames.map((name, i) => (
+                      <span
+                        key={`${name}-${i}`}
+                        className="rounded-full border border-[rgba(201,168,76,0.2)] px-2.5 py-0.5 text-xs text-[var(--parchment-dim)]"
+                      >
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Vote cards — success on left, fails on right */}
               {isComplete && cards !== undefined && (
                 <div className="mt-3 space-y-2">
+                  <p className="font-display text-xs uppercase tracking-[0.15em] text-[var(--gold-dim)]">
+                    Votes
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {cards.map((card, i) => {
                       const isHidden = card === "hidden";
@@ -188,10 +215,7 @@ export function MissionBoard({ players, game }: MissionBoardProps) {
                           }`}
                           style={
                             !isHidden
-                              ? {
-                                  animationDelay: `${i * 0.05}s`,
-                                  animationFillMode: "both"
-                                }
+                              ? { animationDelay: `${i * 0.05}s`, animationFillMode: "both" }
                               : undefined
                           }
                         >
@@ -207,7 +231,7 @@ export function MissionBoard({ players, game }: MissionBoardProps) {
                     })}
                   </div>
 
-                  {/* Vote counts — show after all revealed */}
+                  {/* Vote counts — only after all cards flipped */}
                   {allRevealed && (
                     <div className="flex items-center gap-3 text-xs animate-fade-in">
                       <span className="text-[var(--realm-green-bright)]">
@@ -237,20 +261,6 @@ export function MissionBoard({ players, game }: MissionBoardProps) {
                   <span className="font-semibold">
                     {playerMap.get(ladyUse.targetId) ?? "Unknown"}
                   </span>
-                </div>
-              )}
-
-              {/* Team chips */}
-              {teamNames.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {teamNames.map((name, i) => (
-                    <span
-                      key={`${name}-${i}`}
-                      className="rounded-full border border-[rgba(201,168,76,0.2)] px-2.5 py-0.5 text-xs text-[var(--parchment-dim)]"
-                    >
-                      {name}
-                    </span>
-                  ))}
                 </div>
               )}
             </div>
