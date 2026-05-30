@@ -1,12 +1,12 @@
-# WebAvalon
-
 <p align="center">
   <img src="public/demo/hero.webp" width="800" alt="WebAvalon — animated title over the castle of Camelot" />
 </p>
 
-A cartoon-medieval, multi-device retelling of the hidden-loyalty game of Avalon. Summon a council, share the seal, and let every knight claim a seat on their **own device** for a private role reveal. Then vote, quest, and unmask the traitors of Camelot.
+# WebAvalon
 
-## Screens
+Customisble web-based digitalisation of board game Avalon. Complies with all real game rules. 
+
+## Demo screens
 
 | Summon a council | Share the lobby |
 | :---: | :---: |
