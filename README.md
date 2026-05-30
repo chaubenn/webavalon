@@ -1,27 +1,30 @@
-<p align="center">
-  <img src="public/demo/hero.webp" width="640" alt="WebAvalon — animated title over the castle of Camelot" />
-</p>
-
 # WebAvalon
+
+<p align="center">
+  <img src="public/demo/hero.webp" width="800" alt="WebAvalon — animated title over the castle of Camelot" />
+</p>
 
 A cartoon-medieval, multi-device retelling of the hidden-loyalty game of Avalon. Summon a council, share the seal, and let every knight claim a seat on their **own device** for a private role reveal. Then vote, quest, and unmask the traitors of Camelot.
 
-
 ## Screens
 
-| Summon a council | Host lobby + seal | Private role reveal |
-| --- | --- | --- |
-| <img src="public/demo/screens/home.webp" width="260" alt="Home page" /> | <img src="public/demo/screens/host.webp" width="260" alt="Host lobby with QR seal" /> | <img src="public/demo/screens/reveal.webp" width="260" alt="Role reveal card" /> |
+| Summon a council | Share the lobby |
+| :---: | :---: |
+| <img src="public/demo/screens/summon.webp" width="380" alt="Summon a council — lobby setup" /> | <img src="public/demo/screens/share.webp" width="380" alt="Share the lobby link and QR seal" /> |
+| **Private role reveal** | **Game board** |
+| <img src="public/demo/screens/reveal.webp" width="380" alt="Private Merlin role reveal" /> | <img src="public/demo/screens/lady.webp" width="380" alt="Lady of the Lake loyalty inspection" /> |
+| **Lady of the lake** | **Host board** |
+| <img src="public/demo/screens/victory.webp" width="380" alt="Loyal servants win the realm" /> | <img src="public/demo/screens/host.webp" width="380" alt="Host quest board" /> |
 
 ## The roster
 
 Each role is a hand-styled cartoon-medieval card. The card art carries no text; the name, alignment, and a flavor line are rendered in the UI beneath it.
 
 | Merlin | Percival | Assassin | Morgana |
-| --- | --- | --- | --- |
+| :---: | :---: | :---: | :---: |
 | <img src="public/roles/merlin-card.webp" width="180" alt="Merlin" /> | <img src="public/roles/percival-card.webp" width="180" alt="Percival" /> | <img src="public/roles/assassin-card.webp" width="180" alt="Assassin" /> | <img src="public/roles/morgana-card.webp" width="180" alt="Morgana" /> |
-
-Mordred, Oberon, the Loyal Servant of Arthur, and the Minion of Mordred round out the deck.
+| **Mordred** | **Oberon** | **Loyal Servant of Arthur** | **Minion of Mordred** |
+| <img src="public/roles/mordred-card.webp" width="180" alt="Mordred" /> | <img src="public/roles/oberon-card.webp" width="180" alt="Oberon" /> | <img src="public/roles/good-card.webp" width="180" alt="Loyal Servant of Arthur" /> | <img src="public/roles/evil-card.webp" width="180" alt="Minion of Mordred" /> |
 
 ## How to play (multi-device)
 
